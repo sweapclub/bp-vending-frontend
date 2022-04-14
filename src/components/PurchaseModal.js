@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
-import Coke from "../assets/product/coka-cola.png";
 import { InputCoin, InputBank } from "./InputMoney";
 import { AiFillCloseCircle } from "react-icons/ai";
+import * as paymentApi from "../api/payment";
+import { RESPONSE_STATUS } from "../common/constants";
+import Change from "./Change";
+import CantChange from "./CantChange";
 
-const PurchaseModal = ({ closeDialog }) => {
+const PurchaseModal = ({ product, closeDialog }) => {
   const [coin_1, setCoin_1] = useState(0);
   const [coin_5, setCoin_5] = useState(0);
   const [coin_10, setCoin_10] = useState(0);
@@ -14,24 +17,40 @@ const PurchaseModal = ({ closeDialog }) => {
   const [bank_1000, setBank_1000] = useState(0);
   const [total, setTotal] = useState(0);
 
-  const [ableToPurchase, setAbleToPurchase] = useState(false);
+  const [goToPayment, setGoToPayment] = useState(false);
+  const [payment, setPayment] = useState(null);
+  const [changeFlg, setChangeFlg] = useState(true);
 
-  const [countDown, setCountDown] = useState(5);
+  const sendPurchaseOrder = async () => {
+    const data = {
+      productId: product.productId,
+      amount: 1,
+      money: total,
+      moneyDetail: {
+        coin_1,
+        coin_5,
+        coin_10,
+        bank_20,
+        bank_50,
+        bank_100,
+        bank_500,
+        bank_1000,
+      },
+    };
 
-  const sendPurchaseOrder = () => {
-    let timer = 5;
-    const inter = setInterval(() => {
-      timer -= 1
-      setCountDown(timer);
-      if (timer === 0) {
-        clearInterval(inter);
-        closeDialog();
-      }
-    }, 1000);
-    setAbleToPurchase(true);
+    const res = await paymentApi.doPayment(data);
+    setPayment(res);
+
+    if (res && res.status === RESPONSE_STATUS.SUCCESS) {
+      setChangeFlg(true);
+    } else {
+      setChangeFlg(false);
+    }
+    setGoToPayment(true);
+    setTimeout(() => {
+      closeDialog(true);
+    }, 4000);
   };
-
-  const price = 15;
 
   useEffect(() => {
     let sum = 0;
@@ -55,6 +74,55 @@ const PurchaseModal = ({ closeDialog }) => {
     bank_1000,
   ]);
 
+  const renderContent = () => {
+    if (!goToPayment) {
+      return (
+        <>
+          <div className="flex divide-x h-32">
+            <div className="shrink relative sm:w-40 w-24">
+              <img
+                src={"data:image/png;base64," + product.image}
+                className=" absolute object-contain w-full h-full"
+                alt=""
+              />
+            </div>
+            <div className="grow px-4 align-middle self-center font-semibold ">
+              <p>{product.productName}</p>
+              <p>
+                Price : <span className="text-green-600">{product.price}</span>{" "}
+                Baht
+              </p>
+            </div>
+          </div>
+          <hr />
+          <div className="flex font-semibold pt-2 flex-">
+            <p className="">Add coin</p>
+            <span className="flex-1"></span>
+            <p className="min-w-24">
+              Total : <span className="text-green-600">{total}</span>
+            </p>
+          </div>
+          <div className="flex divide-y flex-col">
+            <InputCoin value="1" total={coin_1} adjust={setCoin_1} />
+            <InputCoin value="5" total={coin_5} adjust={setCoin_5} />
+            <InputCoin value="10" total={coin_10} adjust={setCoin_10} />
+            <InputBank value="20" total={bank_20} adjust={setBank_20} />
+            <InputBank value="50" total={bank_50} adjust={setBank_50} />
+            <InputBank value="100" total={bank_100} adjust={setBank_100} />
+            <InputBank value="500" total={bank_500} adjust={setBank_500} />
+            <InputBank value="1000" total={bank_1000} adjust={setBank_1000} />
+          </div>
+        </>
+      );
+    } else {
+      if (changeFlg) {
+        return <Change payment={payment} closeDialog={closeDialog} />;
+      } else {
+        return <CantChange payment={payment} closeDialog={closeDialog} />;
+      }
+    }
+  };
+
   return (
     <>
       <div className="fixed inset-0 z-10 h-full">
@@ -71,64 +139,29 @@ const PurchaseModal = ({ closeDialog }) => {
                 <AiFillCloseCircle size="24px" />
               </button>
             </div>
-            <div className="rounded-b-md bg-white p-4 text-lg">
-              {!ableToPurchase ? (
-                <>
-                  <div className="flex divide-x h-32">
-                    <div className="shrink relative sm:w-40 w-24">
-                      <img
-                        src={Coke}
-                        className=" absolute object-contain w-full h-full"
-                        alt=""
-                      />
-                    </div>
-                    <div className="grow px-4 align-middle self-center font-semibold ">
-                      <p>Kitkat chakow</p>
-                      <p>
-                        Price : <span className="text-green-600">15</span> Baht
-                      </p>
-                    </div>
-                  </div>
-                  <hr />
-                  <div className="flex font-semibold pt-2 flex-">
-                    <p className="">Add coin</p>
-                    <span className="flex-1"></span>
-                    <p className="min-w-24">
-                      Total : <span className="text-green-600">{total}</span>
-                    </p>
-                  </div>
-                  <div className="flex divide-y flex-col">
-                    <InputCoin value="1" total={coin_1} adjust={setCoin_1} />
-                    <InputCoin value="5" total={coin_5} adjust={setCoin_5} />
-                    <InputCoin value="10" total={coin_10} adjust={setCoin_10} />
-                    <InputBank value="20" total={bank_20} adjust={setBank_20} />
-                    <InputBank value="50" total={bank_50} adjust={setBank_50} />
-                    <InputBank
-                      value="100"
-                      total={bank_100}
-                      adjust={setBank_100}
-                    />
-                    <InputBank
-                      value="500"
-                      total={bank_500}
-                      adjust={setBank_500}
-                    />
-                    <InputBank
-                      value="1000"
-                      total={bank_1000}
-                      adjust={setBank_1000}
-                    />
-                  </div>
-                  <button
-                    disabled={price > total}
-                    className=" disabled:grayscale disabled:hover w-full p-4 mt-2 text-white bg-green-500  font-bold rounded"
-                    onClick={() => sendPurchaseOrder()}
-                  >
-                    Purchase
-                  </button>
-                </>
+            <div className="rounded-b-md bg-white  text-lg overflow-auto">
+              <div
+                style={{ "max-height": "65vh" }}
+                className="overflow-auto p-4"
+              >
+                {renderContent()}
+              </div>
+
+              {!goToPayment ? (
+                <button
+                  disabled={product.price > total}
+                  className=" disabled:grayscale disabled:hover w-full p-4 mt-2 text-white bg-green-500  font-bold rounded"
+                  onClick={() => sendPurchaseOrder()}
+                >
+                  Purchase
+                </button>
               ) : (
-                <> congras you done ! we will close in {countDown}</>
+                <button
+                  className=" disabled:grayscale disabled:hover w-full p-4 mt-2 text-white bg-green-500  font-bold rounded"
+                  onClick={() => closeDialog()}
+                >
+                  Close
+                </button>
               )}
             </div>
           </div>
