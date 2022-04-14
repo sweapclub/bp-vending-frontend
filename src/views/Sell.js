@@ -27,12 +27,12 @@ function Sell() {
   }
 
   useEffect(() => {
-    let refreshRate = 10;
+    let refreshRate = 5;
     getAllProduct();
     const interval = setInterval(() => {
       if (refreshRate === 0) {
         getAllProduct();
-        refreshRate = 10;
+        refreshRate = 5;
       } else {
         refreshRate -= 1;
       }

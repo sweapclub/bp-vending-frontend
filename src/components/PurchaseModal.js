@@ -47,10 +47,16 @@ const PurchaseModal = ({ product, closeDialog }) => {
       setChangeFlg(false);
     }
     setGoToPayment(true);
-    setTimeout(() => {
-      closeDialog(true);
-    }, 4000);
   };
+
+  useEffect(() => {
+    if (goToPayment === true) {
+      const timer = setTimeout(() => {
+        closeDialog(true);
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [goToPayment, closeDialog]);
 
   useEffect(() => {
     let sum = 0;
